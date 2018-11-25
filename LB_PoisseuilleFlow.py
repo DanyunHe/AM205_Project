@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 #Set up
 dx = 1
-dt = 0.005
+dt = 1
 H = 25
 L = 150
 
@@ -66,30 +66,37 @@ def solve_t(t, p0, p1):
     if it < t/dt:
         it+=1
         
-    f0 = np.zeros((n, m ,3))
-    f0[:, :, :] = 1/9
-    f1 = np.zeros((n, m ,3))
-    f1[:, :, :] = 1/9
-    f2 = np.zeros((n, m ,3))
-    f2[:, :, :] = 1/9
-    f3 = np.zeros((n, m ,3))
-    f3[:, :, :] = 1/9
-    f4 = np.zeros((n, m ,3))
-    f4[:, :, :] = 1/9
-    f5 = np.zeros((n, m ,3))
-    f5[:, :, :] = 1/9
-    f6 = np.zeros((n, m ,3))
-    f6[:, :, :] = 1/9
-    f7 = np.zeros((n, m ,3))
-    f7[:, :, :] = 1/9
-    f8 = np.zeros((n, m ,3))
-    f8[:, :, :] = 1/9
+    #Initial Conditions
+    dens = np.zeros((n, m))
+    dens[:, :] = (p0+p1)/2
+    dens[:, 0] = p0
+    dens[:, m-1] = p1
     
-    dens = density(f0, f1, f2, f3, f4, f5, f6, f7, f8, 0)
-    vel = velocity(f0, f1, f2, f3, f4, f5, f6, f7, f8, dens, 0)
+    vel = np.zeros((n, m, 2))
+    vel[:, :, :] = 0
+    
     f_eq = feq(dens, vel)
     
+    f0 = np.zeros((n, m ,3))
+    f0[:, :, 0] = f_eq[:, :, 0]
+    f1 = np.zeros((n, m ,3))
+    f1[:, :, 0] = f_eq[:, :, 1]
+    f2 = np.zeros((n, m ,3))
+    f2[:, :, 0] = f_eq[:, :, 2]
+    f3 = np.zeros((n, m ,3))
+    f3[:, :, 0] = f_eq[:, :, 3]
+    f4 = np.zeros((n, m ,3))
+    f4[:, :, 0] = f_eq[:, :, 4]
+    f5 = np.zeros((n, m ,3))
+    f5[:, :, 0] = f_eq[:, :, 5]
+    f6 = np.zeros((n, m ,3))
+    f6[:, :, 0] = f_eq[:, :, 6]
+    f7 = np.zeros((n, m ,3))
+    f7[:, :, 0] = f_eq[:, :, 7]
+    f8 = np.zeros((n, m ,3))
+    f8[:, :, 0] = f_eq[:, :, 8]
     
+    #Streaming 
     for i in range(0, it):
         for j in range(0, n):
             for k in range(0, m):
@@ -267,17 +274,56 @@ def solve_t(t, p0, p1):
         f7[:, :, 0] = f7[:, :, 2]
         f8[:, :, 0] = f8[:, :, 2]
         
+        #Storing density and velocity plots at each timestep t
+        f0[:, :, 2] = f_eq[:, :, 0]
+        f1[:, :, 2] = f_eq[:, :, 1]
+        f2[:, :, 2] = f_eq[:, :, 2]
+        f3[:, :, 2] = f_eq[:, :, 3]
+        f4[:, :, 2] = f_eq[:, :, 4]
+        f5[:, :, 2] = f_eq[:, :, 5]
+        f6[:, :, 2] = f_eq[:, :, 6]
+        f7[:, :, 2] = f_eq[:, :, 7]
+        f8[:, :, 2] = f_eq[:, :, 8]
+        
+        dens = density(f0, f1, f2, f3, f4, f5, f6, f7, f8, 2)
+        vel = velocity(f0, f1, f2, f3, f4, f5, f6, f7, f8, dens, 2)
+        
+        
+        fig = plt.figure(figsize = (15, 8))
+        plt.imshow(dens)
+        plt.colorbar()
+        plt.show()  
+        fig.savefig(r"C:\Users\jiayi\Desktop\Kay\Study\Fall2018\AM 205\am205_Project\density\dens_t{}".format(i))
+        
+        fig = plt.figure(figsize = (15, 8))
+        plt.imshow(vel[:, :, 0])
+        plt.colorbar()
+        plt.show() 
+        fig.savefig(r"C:\Users\jiayi\Desktop\Kay\Study\Fall2018\AM 205\am205_Project\velocity\velx_t{}".format(i))
+        
+        
+     
+    #Storing density and velocity at time t
+    f0[:, :, 2] = f_eq[:, :, 0]
+    f1[:, :, 2] = f_eq[:, :, 1]
+    f2[:, :, 2] = f_eq[:, :, 2]
+    f3[:, :, 2] = f_eq[:, :, 3]
+    f4[:, :, 2] = f_eq[:, :, 4]
+    f5[:, :, 2] = f_eq[:, :, 5]
+    f6[:, :, 2] = f_eq[:, :, 6]
+    f7[:, :, 2] = f_eq[:, :, 7]
+    f8[:, :, 2] = f_eq[:, :, 8]
         
     dens = density(f0, f1, f2, f3, f4, f5, f6, f7, f8, 2)
     vel = velocity(f0, f1, f2, f3, f4, f5, f6, f7, f8, dens, 2)
     result = {"density": dens, "velocity": vel}
     return result
   
-   '''test'''
+'''test'''
         
 p0 = 1.0019
 p1 = 0.9981
-test = solve_t(6, p0, p1)    
+test = solve_t(1200, p0, p1)    
      
 
       
@@ -289,24 +335,28 @@ for j in range(0, n):
         test_vel_abs[j, k] = np.sqrt(test_vel[j, k, 0] ** 2)
 
 
-plt.figure(figsize = (15, 8))
+fig = plt.figure(figsize = (15, 8))
 plt.imshow(test_dens)
 plt.colorbar()
-plt.show()    
+plt.show()  
+#fig.savefig("test_dens_t6")
 
-
-plt.figure(figsize = (15, 8))
+fig = plt.figure(figsize = (15, 8))
 plt.imshow(test_vel_abs)
 plt.colorbar()
 plt.show() 
+#fig.savefig("test_velocity_abs_t6")
 
 
-exact = [(p1 - p0)/(2*((2*r-1)/6*c*dx)*test_dens[0, 0]*L)*y*(y-H) for y in range(0, n)]
+
+#vis = ((1/3)*dx**2/dt**2)*(r-dt/2)
+vis = (2*r-1)/6
+exact = [((p1 - p0)/(2*vis*1*L))*y*(y-H) for y in range(0, n)]
 plt.plot(test_vel[:, 0, 0], np.arange(0, n, 1), "--")
-#plt.plot(exact, np.arange(0, n, 1))
+plt.plot(exact, np.arange(0, n, 1))
  
 '''test2'''
-test2 = solve_t(1, p0, p1)    
+test2 = solve_t(500, p0, p1)    
      
 
       
@@ -331,7 +381,41 @@ plt.show()
 
 plt.plot(test2_vel[:, 0, 0], np.arange(0, n, 1), "--")
 
-'''test end'''
+'''test 3'''
+        
+p0 = 1.0019
+p1 = 0.9981
+test = solve_t(10000, p0, p1)    
+     
+
+      
+test_dens = test["density"]
+test_vel = test["velocity"]
+test_vel_abs = np.zeros((n, m))
+for j in range(0, n):
+    for k in range(0, m):
+        test_vel_abs[j, k] = np.sqrt(test_vel[j, k, 0] ** 2)
+
+
+plt.figure(figsize = (15, 8))
+plt.imshow(test_dens)
+plt.colorbar()
+plt.show()    
+#plt.imsave("test_dens_t6", test_dens)
+
+plt.figure(figsize = (15, 8))
+plt.imshow(test_vel_abs)
+plt.colorbar()
+plt.show() 
+#plt.imsave("test_velocity_abs_t6",test_vel_abs)
+
+
+vis = ((1/3)*dx**2/dt**2)*(r-dt/2)
+exact = [((p1 - p0)/(2*vis*1*L))*y*(y-H) for y in range(0, n)]
+plt.plot(test_vel[:, 0, 0], np.arange(0, n, 1), "--")
+plt.plot(exact, np.arange(0, n, 1))
+ 
+'''test end '''
 
 
     
