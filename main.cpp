@@ -29,11 +29,11 @@ using namespace std;
  * Re: Reynold's number
  * nt: number of threads to run in parallel computing in OpenMP
  */
-const int H = 20;
-const int L = 50;
-const double r = 4.0;
-const double tau = 0.6;
-const double Re = 10.0;
+const int H = 100;
+const int L = 400;
+const double r = 15.0;
+const double tau = 0.8;
+const double Re = 2.0;
 const int nt = 25;  
 
 /*pg: Poiseuille Flow Channel Grid*/
@@ -739,6 +739,21 @@ int main ()
     int ct = 1;
     double relVel = 1.;
     
+    
+    ofstream out_dens0 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
+    ofstream out_velx0 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
+
+    for (int j = 1; j < n-1; j++) {
+        for (int k = 0; k < m; k++){
+
+            out_dens0 << dens[j][k] << " " ;
+            out_velx0 << vel[j][k][0] << " " ;
+
+        }
+        out_dens0 << endl;
+        out_velx0 << endl;   
+    }
+    
     /*Steady State Criteria; number of timesteps*/
     while (relVel > 5.0 * pow(10, -9.)){   
 
@@ -837,32 +852,38 @@ int main ()
         /*Save density and velocity information at this timestep*/ 
         double relVelN = 0.0;
         double relVelD = 0.0; 
-        ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Poisseuille/Density/textfile/density"+ to_string(ct) +".txt");
-        ofstream out_vel ("/home/jiayinlu/Desktop/Kay/LB/Poisseuille/Velocity/textfile/velocity"+ to_string(ct) +".txt");
         
-        for (int j = 1; j < n-1; j++) {
-            for (int k = 0; k < m; k++){
-                
-                relVelN = relVelN + abs(vel[j][k][0] - oldVelX[j][k]);
-                relVelD = relVelD + abs(vel[j][k][0]);
-                
-                out_dens << dens[j][k] << " " ;
-                
-                for (int i = 0; i < 2; i++){
-                    
-                    out_vel << vel[j][k][i] << " " ;
-                    
-                }
-                
+        #pragma omp parallel num_threads(nt)
+        {
+            #pragma omp for
+            for (int j = 1; j < n-1; j++) {
+                for (int k = 0; k < m; k++){
+
+                    relVelN = relVelN + abs(vel[j][k][0] - oldVelX[j][k]);
+                    relVelD = relVelD + abs(vel[j][k][0]);
+
+                }  
             }
-            out_dens << endl;
-            out_vel << endl;   
         }
         
         relVel = relVelN/relVelD;
         ct ++;
         
     };
+    
+    ofstream out_dens1 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
+    ofstream out_velx1 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
+
+    for (int j = 1; j < n-1; j++) {
+        for (int k = 0; k < m; k++){
+
+            out_dens1 << dens[j][k] << " " ;
+            out_velx1 << vel[j][k][0] << " " ;
+
+        }
+        out_dens1 << endl;
+        out_velx1 << endl;   
+    }
     
     
     /*Store steady Poisseuille Flow x velocity information for Fixed Velocity Inlet in Cylinder case*/
@@ -900,7 +921,7 @@ int main ()
     int ct2 = 1;
     
     /*Determine number of timesteps*/
-    while (ct2 < 100000) {
+    while (ct2 < 60000) {
         
         /*Streaming*/
         /*Exclude the 2's over upper & lower walls*/
@@ -983,22 +1004,20 @@ int main ()
         
         
         /*Save density and velocity information at this timestep*/ 
-        ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Cylinder1/Density/textfile/density"+ to_string(ct2) +".txt");
-        ofstream out_vel ("/home/jiayinlu/Desktop/Kay/LB/Cylinder1/Velocity/textfile/velocity"+ to_string(ct2) +".txt");
+        ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/density/textfile/density"+ to_string(ct2) +".txt");
+        ofstream out_velx ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/velx/textfile/velx"+ to_string(ct2) +".txt");
+        ofstream out_vely ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/vely/textfile/vely"+ to_string(ct2) +".txt");
         for (int j = 1; j < n-1; j++) {
             for (int k = 0; k < m; k++){
                 
                 out_dens << dens[j][k] << " " ;
-                
-                for (int i = 0; i < 2; i++){
-                    
-                    out_vel << vel[j][k][i] << " " ;
-                    
-                }
-                
+                out_velx << vel[j][k][0] << " " ;
+                out_vely << vel[j][k][1] << " " ;
+  
             }
             out_dens << endl;
-            out_vel << endl;   
+            out_velx << endl;   
+            out_vely << endl;
         }
         
         ct2 ++;
