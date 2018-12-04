@@ -28,6 +28,7 @@ using namespace std;
  * tau: relaxation time parameter
  * Re: Reynold's number
  * nt: number of threads to run in parallel computing in OpenMP
+ * ts: number of timesteps to run in Flow past Cylinder; Should be a multiple of 2000 (evenly spaced timesteps saving)
  */
 const int H = 100;
 const int L = 400;
@@ -35,6 +36,7 @@ const double r = 15.0;
 const double tau = 0.8;
 const double Re = 2.0;
 const int nt = 25;  
+const int ts = 60000;
 
 /*pg: Poiseuille Flow Channel Grid*/
 /*mg: Mesh Grid setup with cylinder immersed*/
@@ -921,7 +923,7 @@ int main ()
     int ct2 = 1;
     
     /*Determine number of timesteps*/
-    while (ct2 < 60000) {
+    while (ct2 < ts+2) {
         
         /*Streaming*/
         /*Exclude the 2's over upper & lower walls*/
@@ -1003,21 +1005,24 @@ int main ()
         velocity(2, "Cylinder");
         
         
-        /*Save density and velocity information at this timestep*/ 
-        ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/density/textfile/density"+ to_string(ct2) +".txt");
-        ofstream out_velx ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/velx/textfile/velx"+ to_string(ct2) +".txt");
-        ofstream out_vely ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/vely/textfile/vely"+ to_string(ct2) +".txt");
-        for (int j = 1; j < n-1; j++) {
-            for (int k = 0; k < m; k++){
-                
-                out_dens << dens[j][k] << " " ;
-                out_velx << vel[j][k][0] << " " ;
-                out_vely << vel[j][k][1] << " " ;
-  
+        /*Save only 2000 evenly spaced points in timestep iteration*/
+        if ((ct2-1)%(ts/2000)==0){
+            /*Save density and velocity information at this timestep*/ 
+            ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/density/textfile/density"+ to_string(ct2) +".txt");
+            ofstream out_velx ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/velx/textfile/velx"+ to_string(ct2) +".txt");
+            ofstream out_vely ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/vely/textfile/vely"+ to_string(ct2) +".txt");
+            for (int j = 1; j < n-1; j++) {
+                for (int k = 0; k < m; k++){
+
+                    out_dens << dens[j][k] << " " ;
+                    out_velx << vel[j][k][0] << " " ;
+                    out_vely << vel[j][k][1] << " " ;
+
+                }
+                out_dens << endl;
+                out_velx << endl;   
+                out_vely << endl;
             }
-            out_dens << endl;
-            out_velx << endl;   
-            out_vely << endl;
         }
         
         ct2 ++;
