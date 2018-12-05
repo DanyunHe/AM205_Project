@@ -34,7 +34,7 @@ const int H = 100;
 const int L = 400;
 const double r = 15.0;
 const double tau = 0.8;
-const double Re = 2.0;
+const double Re = 200.0;
 const int nt = 25;  
 const int ts = 60000;
 
@@ -570,21 +570,26 @@ void ZouHe(string str1, string str2, int j, int k){
             f8[j][k][1] = f8[j-1][k-1][0];
             f4[j][k][1] = f4[j-1][k][0];
             
+            /*Neumann BC for calculating vy: using information of fi[j][k-1][1]; 0 flux in y direction*/
+            double pp0 = f0[j][k-1][1] + f1[j][k-1][1] + f2[j][k-1][1] + f3[j][k-1][1] + f4[j][k-1][1] + f5[j][k-1][1] + f6[j][k-1][1] + f7[j][k-1][1] + f8[j][k-1][1];
+            double vy0 = c/pp0 * (f2[j][k-1][1] - f4[j][k-1][1] + f5[j][k-1][1] + f6[j][k-1][1] - f7[j][k-1][1] -f8[j][k-1][1]);
+            double vy = vy0 * pp0 / p1;
+            
             double vx = c * (-1. +  1./p1 * (f0[j][k][1] + f2[j][k][1] + 
                  f4[j][k][1] + 2. * (f1[j][k][1] + f5[j][k][1] + 
                    f8[j][k][1])));
-            double s1 = 1./9 * (3. * (e[1][0] * vx) /c + 9./2 * pow((e[1][0] * vx), 2.) / pow(c, 2.)
-                        - 3./2 * (vx * vx)/pow(c, 2.));
-            double s3 = 1./9 * (3. * (e[3][0] * vx) /c + 9./2 * pow((e[3][0] * vx), 2.) / pow(c, 2.)
-                        - 3./2 * (vx * vx)/pow(c, 2.));
+            double s1 = 1./9 * (3. * (e[1][0] * vx + e[1][1] * vy) /c + 9./2 * pow((e[1][0] * vx + e[1][1] * vy), 2.) / pow(c, 2.)
+                        - 3./2 * (vx * vx + vy * vy)/pow(c, 2.));
+            double s3 = 1./9 * (3. * (e[3][0] * vx + e[3][1] * vy) /c + 9./2 * pow((e[3][0] * vx + e[3][1] * vy), 2.) / pow(c, 2.)
+                        - 3./2 * (vx * vx + vy * vy)/pow(c, 2.));
             double f_eq1 =  1./9 * p1 + p1 * s1;
             double f_eq3 =  1./9 * p1 + p1 * s3;
 
             f3[j][k][1] = f1[j][k][1] + f_eq3 - f_eq1;
             f6[j][k][1] = 1./2 * (-p1*vx/c + f1[j][k][1] - f2[j][k][1] - 
-                           f3[j][k][1] + f4[j][k][1] + 2*f8[j][k][1]);
+                           f3[j][k][1] + f4[j][k][1] + 2*f8[j][k][1] + p1*vy/c);
             f7[j][k][1] = 1./2 * (-p1 * vx/c + f1[j][k][1] + f2[j][k][1] - 
-                           f3[j][k][1] - f4[j][k][1] + 2*f5[j][k][1]);
+                           f3[j][k][1] - f4[j][k][1] + 2*f5[j][k][1] - p1*vy/c);
         }  
     }      
 };
@@ -742,8 +747,8 @@ int main ()
     double relVel = 1.;
     
     
-    ofstream out_dens0 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
-    ofstream out_velx0 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
+    ofstream out_dens0 ("/home/jiayinlu/Desktop/Kay/LB/Re200/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
+    ofstream out_velx0 ("/home/jiayinlu/Desktop/Kay/LB/Re200/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
 
     for (int j = 1; j < n-1; j++) {
         for (int k = 0; k < m; k++){
@@ -873,8 +878,8 @@ int main ()
         
     };
     
-    ofstream out_dens1 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
-    ofstream out_velx1 ("/home/jiayinlu/Desktop/Kay/LB/Re2/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
+    ofstream out_dens1 ("/home/jiayinlu/Desktop/Kay/LB/Re200/Poiseuille/density/textfile/density"+ to_string(ct) +".txt");
+    ofstream out_velx1 ("/home/jiayinlu/Desktop/Kay/LB/Re200/Poiseuille/velocity/velx/textfile/velx"+ to_string(ct) +".txt");
 
     for (int j = 1; j < n-1; j++) {
         for (int k = 0; k < m; k++){
@@ -945,7 +950,17 @@ int main ()
                         ZouHe("Cylinder", "inlet", j, k);
 
                     } 
-
+                }
+            }
+        }
+        
+        /*A separate loop for calculating Outlet streaming, since use Neumann BC, using information of fi[j][k-1][1]*/
+        #pragma omp parallel num_threads(nt)
+        {
+            #pragma omp for
+            for (int j = 1; j < n-1; j++) {
+                for (int k = 0; k < m; k++){
+                    
                     if (k == (m-1) && j != 1 && j != n-2) {
                         /*outlet BC*/
                         ZouHe("Cylinder", "outlet", j, k);
@@ -954,7 +969,6 @@ int main ()
                 }
             }
         }
-        
         
         /*four corners BC streaming*/
         corner("Cylinder", 1, m-1);
@@ -1008,9 +1022,9 @@ int main ()
         /*Save only 2000 evenly spaced points in timestep iteration*/
         if ((ct2-1)%(ts/2000)==0){
             /*Save density and velocity information at this timestep*/ 
-            ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/density/textfile/density"+ to_string(ct2) +".txt");
-            ofstream out_velx ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/velx/textfile/velx"+ to_string(ct2) +".txt");
-            ofstream out_vely ("/home/jiayinlu/Desktop/Kay/LB/Re2/Cylinder/velocity/vely/textfile/vely"+ to_string(ct2) +".txt");
+            ofstream out_dens ("/home/jiayinlu/Desktop/Kay/LB/Re200/Cylinder/density/textfile/density"+ to_string(ct2) +".txt");
+            ofstream out_velx ("/home/jiayinlu/Desktop/Kay/LB/Re200/Cylinder/velocity/velx/textfile/velx"+ to_string(ct2) +".txt");
+            ofstream out_vely ("/home/jiayinlu/Desktop/Kay/LB/Re200/Cylinder/velocity/vely/textfile/vely"+ to_string(ct2) +".txt");
             for (int j = 1; j < n-1; j++) {
                 for (int k = 0; k < m; k++){
 
